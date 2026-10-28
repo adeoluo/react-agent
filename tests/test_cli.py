@@ -16,8 +16,8 @@ def test_tools_lists_builtin_tools(capsys: pytest.CaptureFixture[str]) -> None:
     assert "memory" in output
 
 
-def test_demo_runs_offline_and_finishes(capsys: pytest.CaptureFixture[str]) -> None:
-    exit_code = main(["demo"])
+def test_demonstrate_runs_offline_and_finishes(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = main(["demonstrate"])
     output = capsys.readouterr().out
     assert exit_code == 0
     # The scripted demo uses search then calculator and answers with both facts.
