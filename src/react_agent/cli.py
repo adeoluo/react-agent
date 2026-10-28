@@ -46,6 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
     demo_parser = subparsers.add_parser("demonstrate", help="Run a scripted offline example.")
     demo_parser.set_defaults(handler=_handle_demo)
 
+    benchmark_parser = subparsers.add_parser(
+        "benchmark", help="Run the offline benchmark suite and report a success rate."
+    )
+    benchmark_parser.set_defaults(handler=_handle_benchmark)
+
     run_parser = subparsers.add_parser("run", help="Answer a question with a provider model.")
     run_parser.add_argument("question", help="The question to answer.")
     run_parser.add_argument(
@@ -75,6 +80,18 @@ def _run_and_print(model: LanguageModel, question: str, *, max_steps: int) -> in
 
 def _handle_demo(_: argparse.Namespace) -> int:
     return _run_and_print(ScriptedModel(_DEMO_SCRIPT), _DEMO_QUESTION, max_steps=6)
+
+
+def _handle_benchmark(_: argparse.Namespace) -> int:
+    from react_agent.benchmark import run_benchmark
+    from react_agent.llms import RulePolicyModel
+    from react_agent.suite import SUITE
+    from react_agent.tools import full_toolset
+
+    agent = ReActAgent(RulePolicyModel(), full_toolset(), max_steps=4)
+    report = run_benchmark(agent, SUITE)
+    print(report.summary())
+    return 0 if report.success_rate == 1.0 else 1
 
 
 def _handle_run(args: argparse.Namespace) -> int:
