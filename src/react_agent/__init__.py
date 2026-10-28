@@ -20,6 +20,7 @@ from react_agent.core import (
     TraceStep,
     parse_output,
 )
+from react_agent.llms import AnthropicModel, OpenAIModel, ScriptedModel
 
 __version__ = "0.1.0"
 
@@ -27,10 +28,13 @@ __all__ = [
     "AgentAction",
     "AgentFinish",
     "AgentResult",
+    "AnthropicModel",
     "FunctionTool",
     "LanguageModel",
+    "OpenAIModel",
     "ParseError",
     "ReActAgent",
+    "ScriptedModel",
     "Tool",
     "ToolError",
     "ToolRegistry",
