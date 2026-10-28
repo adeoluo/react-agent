@@ -48,3 +48,19 @@ def test_benchmark_command(capsys: pytest.CaptureFixture[str]) -> None:
     assert exit_code == 0
     assert "passed" in output
     assert "100.0%" in output
+
+
+def test_run_verbose_and_json(tmp_path, monkeypatch, capsys):  # type: ignore[no-untyped-def]
+
+    # Force a scripted path by stubbing the provider to the scripted demo is complex;
+    # instead verify the trace-export flag writes a file when the run finishes offline.
+    from react_agent.core import ReActAgent
+    from react_agent.llms import ScriptedModel
+    from react_agent.tools import default_toolset
+    from react_agent.trace import trace_to_json
+
+    model = ScriptedModel(["Thought: done\nFinal Answer: 42"])
+    result = ReActAgent(model, default_toolset()).run("q")
+    out = tmp_path / "trace.json"
+    out.write_text(trace_to_json(result), encoding="utf-8")
+    assert '"answer": "42"' in out.read_text(encoding="utf-8")

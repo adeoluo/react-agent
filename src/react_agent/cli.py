@@ -14,11 +14,14 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 
 from react_agent import __version__
 from react_agent.core import LanguageModel, ReActAgent
 from react_agent.llms import AnthropicModel, OpenAIModel, ScriptedModel
+from react_agent.logging_callbacks import logging_callbacks
 from react_agent.tools import default_toolset
+from react_agent.trace import trace_to_json
 
 _DEMO_QUESTION = "What is the capital of France, and what is 21 times 2?"
 _DEMO_SCRIPT = (
@@ -61,6 +64,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--model", default=None, help="Override the provider's model id.")
     run_parser.add_argument("--max-steps", type=int, default=6, help="Maximum action steps.")
+    run_parser.add_argument("--verbose", action="store_true", help="Log each step as it happens.")
+    run_parser.add_argument(
+        "--json", type=Path, default=None, metavar="PATH", help="Write the trace as JSON."
+    )
     run_parser.set_defaults(handler=_handle_run)
     return parser
 
@@ -78,6 +85,23 @@ def _run_and_print(model: LanguageModel, question: str, *, max_steps: int) -> in
     return 0 if result.finished else 1
 
 
+def _handle_run(args: argparse.Namespace) -> int:
+    provider_cls = _PROVIDERS[args.provider]
+    model = provider_cls(model=args.model) if args.model else provider_cls()
+    callbacks = logging_callbacks() if args.verbose else None
+    agent = ReActAgent(model, default_toolset(), max_steps=args.max_steps, callbacks=callbacks)
+    try:
+        result = agent.run(args.question)
+    except ImportError as error:
+        print(str(error), file=sys.stderr)
+        return 2
+    print(result.transcript())
+    if args.json is not None:
+        args.json.write_text(trace_to_json(result), encoding="utf-8")
+        print(f"\nWrote trace to {args.json}")
+    return 0 if result.finished else 1
+
+
 def _handle_demo(_: argparse.Namespace) -> int:
     return _run_and_print(ScriptedModel(_DEMO_SCRIPT), _DEMO_QUESTION, max_steps=6)
 
@@ -92,16 +116,6 @@ def _handle_benchmark(_: argparse.Namespace) -> int:
     report = run_benchmark(agent, SUITE)
     print(report.summary())
     return 0 if report.success_rate == 1.0 else 1
-
-
-def _handle_run(args: argparse.Namespace) -> int:
-    provider_cls = _PROVIDERS[args.provider]
-    model = provider_cls(model=args.model) if args.model else provider_cls()
-    try:
-        return _run_and_print(model, args.question, max_steps=args.max_steps)
-    except ImportError as error:
-        print(str(error), file=sys.stderr)
-        return 2
 
 
 def main(argv: Sequence[str] | None = None) -> int:
