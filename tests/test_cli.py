@@ -40,3 +40,11 @@ def test_run_with_missing_sdk_exits_cleanly(
 def test_missing_command_errors() -> None:
     with pytest.raises(SystemExit):
         main([])
+
+
+def test_benchmark_command(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = main(["benchmark"])
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "passed" in output
+    assert "100.0%" in output
