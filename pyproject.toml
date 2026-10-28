@@ -1,23 +1,24 @@
 [project]
 name = "react-agent"
 version = "0.1.0"
-description = "One-line description."
+description = "A ReAct reasoning-and-acting agent built from scratch: tool use, a transparent control loop, and full step tracing."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Adeolu Ogunnoiki" }]
-dependencies = [
-    "pydantic>=2.0",
-    "pydantic-settings>=2.0",
-    "structlog>=24.0",
-]
+dependencies = []
 
 [project.optional-dependencies]
-# install with: uv sync --extra ml
-ml = [
-    "numpy>=1.26",
-    "torch>=2.2",
+# Provider adapters are optional; the agent runs fully offline without them.
+openai = [
+    "openai>=1.0",
 ]
+anthropic = [
+    "anthropic>=0.39",
+]
+
+[project.scripts]
+react-agent = "react_agent.cli:main"
 
 [dependency-groups]
 dev = [
@@ -54,7 +55,6 @@ python_version = "3.11"
 strict = true
 warn_unused_configs = true
 disallow_untyped_defs = true
-plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q"
