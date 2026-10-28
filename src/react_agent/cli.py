@@ -43,9 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     tools_parser = subparsers.add_parser("tools", help="List the built-in tools.")
     tools_parser.set_defaults(handler=_handle_tools)
 
-    demo_parser = subparsers.add_parser(
-        "demonstrate", help="Run a scripted offline example."
-    )
+    demo_parser = subparsers.add_parser("demonstrate", help="Run a scripted offline example.")
     demo_parser.set_defaults(handler=_handle_demo)
 
     run_parser = subparsers.add_parser("run", help="Answer a question with a provider model.")
