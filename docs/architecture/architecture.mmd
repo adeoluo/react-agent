@@ -1,5 +1,5 @@
 ---
-title: System Architecture - React Agent
+title: System Architecture - ReAct Agent
 config:
   theme: base
   themeVariables:
@@ -15,24 +15,30 @@ flowchart LR
     classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef external fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
-    classDef danger   fill:#EF4444,stroke:#1E293B,color:#ffffff,stroke-width:1px;
 
-    User([User]):::external
+    User([User / CLI]):::external
 
-    subgraph Application["Application Service"]
-        API[API Layer]:::core
-        Core[Core Engine]:::core
-        Evaluation[Evaluation Harness]:::core
+    subgraph Loop["ReAct Control Loop"]
+        Prompt[Prompt builder]:::core
+        Parser[Output parser]:::core
+        Agent[Agent]:::core
     end
 
-    Cache[(Semantic Cache)]:::data
-    Store[(Datastore / Index)]:::data
-    LLM{{LLM Provider}}:::external
+    subgraph Tools["Tool Registry"]
+        Calc[(calculator)]:::data
+        Search[(search)]:::data
+        Memory[(memory)]:::data
+    end
 
-    User -->|request| API
-    API --> Core
-    Core -->|lookup| Cache
-    Core -->|retrieve| Store
-    Core -->|completion| LLM
-    Core -.->|traces/metrics| Evaluation
-    Core -->|response| User
+    LLM{{Language model}}:::external
+
+    User -->|question| Agent
+    Agent -->|build| Prompt
+    Prompt -->|prompt| LLM
+    LLM -->|completion| Parser
+    Parser -->|Action| Agent
+    Agent -->|call tool| Calc
+    Agent -->|call tool| Search
+    Agent -->|call tool| Memory
+    Calc -.->|observation| Agent
+    Agent -->|Final Answer + trace| User
