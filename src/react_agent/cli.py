@@ -3,7 +3,7 @@
 Three subcommands:
 
 - ``tools`` - list the built-in tools.
-- ``demo``  - run a scripted, fully offline example and print the reasoning trace.
+- ``demonstrate`` - run a scripted, fully offline example and print the reasoning trace.
 - ``run``   - answer a question with a frontier provider model (requires an API key).
 
 The CLI only wires together the agent, tools, and models; it contains no reasoning logic.
@@ -43,7 +43,9 @@ def build_parser() -> argparse.ArgumentParser:
     tools_parser = subparsers.add_parser("tools", help="List the built-in tools.")
     tools_parser.set_defaults(handler=_handle_tools)
 
-    demo_parser = subparsers.add_parser("demo", help="Run a scripted offline example.")
+    demo_parser = subparsers.add_parser(
+        "demonstrate", help="Run a scripted offline example."
+    )
     demo_parser.set_defaults(handler=_handle_demo)
 
     run_parser = subparsers.add_parser("run", help="Answer a question with a provider model.")

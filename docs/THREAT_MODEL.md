@@ -1,21 +1,30 @@
-# Threat Model - React Agent
+# Threat Model - ReAct Agent
 
 ## Assets
-- What's worth protecting (data, keys, model, user trust, budget).
+
+- The host system and its resources (the agent executes tools).
+- Any API keys supplied for provider adapters.
+- Integrity of the agent's answers and trace.
 
 ## Trust boundaries
-- Where untrusted input crosses into the system (reference the architecture diagram).
 
-## Threats (STRIDE + LLM-specific)
+- **The question and all model output are untrusted text.** Model output selects a tool
+  and its input, so it must never be able to escalate beyond the registered tools.
+- **Provider adapters** are the only components that cross the network boundary.
+
+## Threats and mitigations
 
 | Threat | Vector | Impact | Mitigation |
 |---|---|---|---|
-| Prompt injection | Untrusted content in context / tools | Data exfiltration, unsafe actions | Input/output filtering, tool allow-list, least privilege |
-| Jailbreak | Adversarial user prompt | Policy bypass | System-prompt hardening, output classifier, refusal evaluation |
-| Data exfiltration | Model echoes secrets / PII | Privacy breach | Secret scanning, output redaction, no secrets in context |
-| Excessive cost | Unbounded loops / large inputs | $ blowout | Token/step budgets, rate limits, timeouts |
-| Tool abuse | Agent calls dangerous tool | Destructive action | Approval gates, sandboxing, dry-run |
-| Supply chain | Malicious dependency | Code execution | Pinned dependencies, Dependabot, SBOM |
+| Arbitrary code execution | Model asks the calculator to evaluate code | Host compromise | Calculator parses an AST with an operator allow-list; `eval` is never used |
+| Prompt injection via tool output | A tool returns text that steers later reasoning | Hijacked behavior | Tools are safe and read-only; observations are data, and the model can only ever select a registered tool |
+| Unbounded loops / cost | Model never emits a Final Answer | Resource / token blowup | Hard `max_steps` budget; malformed steps also consume the budget |
+| Unknown or side-effecting tool | Model names a tool that is not registered | Unexpected action | Unknown tools are rejected and reported; only explicitly registered tools can run |
+| Secret leakage | API keys in logs or traces | Credential compromise | Keys read from environment only; never logged; `.env` is git-ignored |
+| Supply-chain compromise | Malicious dependency | Code execution | Zero runtime dependencies; provider SDKs are optional; Dependabot and CodeQL in CI |
 
 ## Residual risk
-- What remains after mitigations and why it's acceptable.
+
+If a user registers a side-effecting or privileged tool, the model's output can trigger it.
+Such tools must add their own authorization, sandboxing, and approval gates; the framework
+provides the step budget and the unknown-tool guard but cannot vet arbitrary user tools.
