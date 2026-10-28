@@ -13,6 +13,7 @@ The agent is built from small, independently testable pieces:
 from __future__ import annotations
 
 from react_agent.core.agent import ReActAgent
+from react_agent.core.callbacks import Callbacks
 from react_agent.core.llm import LanguageModel
 from react_agent.core.parser import ParseError, parse_output
 from react_agent.core.steps import AgentAction, AgentFinish, AgentResult, TraceStep
@@ -22,6 +23,7 @@ __all__ = [
     "AgentAction",
     "AgentFinish",
     "AgentResult",
+    "Callbacks",
     "FunctionTool",
     "LanguageModel",
     "ParseError",
