@@ -73,6 +73,18 @@ Benchmark: 6/6 passed (100.0%), mean 1.0 steps
   ...
 ```
 
+### Performance
+
+> Measured with `uv run python benchmarks/benchmark.py`.
+
+| Operation | Throughput |
+|---|---:|
+| Full agent runs (plan, act, observe, answer) | ~46,000 runs / sec |
+| Calculator tool calls (AST evaluation) | ~190,000 calls / sec |
+
+The control loop and tools are pure-Python and offline, so the agent's own overhead is
+negligible next to the model calls a production deployment would make.
+
 ## Demonstration
 
 Fully offline, via `python -m react_agent demonstrate`:
