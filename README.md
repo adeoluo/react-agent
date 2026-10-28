@@ -43,6 +43,38 @@ interchangeable. See the [architecture decision records](docs/adr/) for key choi
 
 ## Demonstration
 
+## Capabilities
+
+A complete, from-scratch agent toolkit, all offline and dependency-free:
+
+- **10 built-in tools** across arithmetic, retrieval, dates, units, and text, plus a
+  structured knowledge base - all safe (the calculator uses an AST allow-list, never
+  `eval`) and all raising recoverable `ToolError`s on bad input.
+- **Robust control loop** that recovers from malformed output, unknown tools, and tool
+  failures by turning each into an observation.
+- **Observability** via `Callbacks` hooks (step, action, observation, finish) and a
+  ready-made logging-callbacks factory; a `--verbose` CLI flag streams each step.
+- **Budgets**: `max_steps` and an optional `max_prompt_chars` cap (a token-cost proxy).
+- **Benchmarking**: a `BenchmarkTask` + `run_benchmark` harness with a six-task suite and
+  a deterministic rule-policy model, producing a real, reproducible **success rate**.
+- **Trace export**: lossless JSON serialization of a full run (`--json PATH`), the
+  substrate for trace viewers and offline analysis.
+
+## Benchmark
+
+The offline agent, driven by the deterministic rule-policy model over the full toolset,
+solves the built-in suite end to end (`python -m react_agent benchmark`):
+
+```text
+Benchmark: 6/6 passed (100.0%), mean 1.0 steps
+  [PASS] arithmetic-basic (1 steps)
+  [PASS] capital-france (1 steps)
+  [PASS] convert-temperature (1 steps)
+  ...
+```
+
+## Demonstration
+
 Fully offline, via `python -m react_agent demonstrate`:
 
 ```text
@@ -76,8 +108,9 @@ git clone https://github.com/adeoluo/react-agent.git && cd react-agent
 make setup                    # install dev tooling + pre-commit hooks
 make all                      # lint + type-check + test
 
-python -m react_agent tools   # list the built-in tools
-python -m react_agent demonstrate    # run the offline scripted example
+python -m react_agent tools        # list the built-in tools
+python -m react_agent demonstrate  # run the offline scripted example
+python -m react_agent benchmark    # run the offline benchmark suite
 ```
 
 Use a frontier model by installing its optional extra and setting an API key:
@@ -85,15 +118,21 @@ Use a frontier model by installing its optional extra and setting an API key:
 ```bash
 uv sync --extra openai        # or: --extra anthropic
 export OPENAI_API_KEY=...
-python -m react_agent run "What is 17 * 23, and what is the capital of Japan?"
+python -m react_agent run --verbose --json trace.json \
+    "What is 17 * 23, and what is the capital of Japan?"
 ```
 
 ## Built-in tools
 
-- **calculator** - evaluates arithmetic through an AST operator allow-list; never uses
-  `eval`, so neither the model nor a prompt injection can execute arbitrary code.
-- **search** - deterministic, offline lookup over a small bundled knowledge base.
+- **calculator** - arithmetic through an AST operator allow-list; never uses `eval`.
+- **search** - fuzzy, offline lookup over a bundled knowledge base.
+- **knowledge_base** - structured attribute lookup (`capital of France`).
 - **memory** - a per-run key-value scratchpad (`set k = v` / `get k`).
+- **date_difference** / **weekday** - deterministic date reasoning.
+- **convert_units** - length, mass, and temperature conversion.
+- **text_length** / **text_transform** / **count_occurrences** - string utilities.
+
+`default_toolset()` provides the core three; `full_toolset()` provides all ten.
 
 ## Design decisions
 
