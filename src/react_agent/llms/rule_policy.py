@@ -16,10 +16,10 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-_CALC = re.compile(r"what is\s+(.+?)\s*\?", re.IGNORECASE)
-_CAPITAL = re.compile(r"capital of\s+([A-Za-z]+)", re.IGNORECASE)
-_CONVERT = re.compile(r"convert\s+(.+?)(?:\?|$)", re.IGNORECASE)
-_LAST_OBSERVATION = re.compile(r"Observation:\s*(.*)(?:\n|$)")
+_CALC = re.compile(r"what is[ \t]+([^?]+?)[ \t]*\?", re.IGNORECASE)
+_CAPITAL = re.compile(r"capital of[ \t]+([A-Za-z]+)", re.IGNORECASE)
+_CONVERT = re.compile(r"convert[ \t]+([^?\n]+)", re.IGNORECASE)
+_LAST_OBSERVATION = re.compile(r"Observation:[ \t]*([^\n]*)")
 
 
 @dataclass
