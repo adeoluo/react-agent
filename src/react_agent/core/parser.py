@@ -24,12 +24,12 @@ import re
 from react_agent.core.steps import AgentAction, AgentFinish
 
 _THOUGHT = re.compile(
-    r"Thought:[ \t]*(.*?)(?=\n[ \t]*(?:Action|Final Answer)[ \t]*:|\Z)",
-    re.IGNORECASE | re.DOTALL,
+    r"Thought:[ \t]*([^\n]*(?:\n(?![ \t]*(?:Action|Final Answer)[ \t]*:)[^\n]*)*)",
+    re.IGNORECASE,
 )
 _ACTION = re.compile(r"Action:[ \t]*([^\n]*)", re.IGNORECASE)
 _ACTION_INPUT = re.compile(
-    r"Action Input:[ \t]*(.*?)(?=\n[ \t]*Observation[ \t]*:|\Z)", re.IGNORECASE | re.DOTALL
+    r"Action Input:[ \t]*([^\n]*(?:\n(?![ \t]*Observation[ \t]*:)[^\n]*)*)", re.IGNORECASE
 )
 _FINAL = re.compile(r"Final Answer:[ \t]*(.*)", re.IGNORECASE | re.DOTALL)
 

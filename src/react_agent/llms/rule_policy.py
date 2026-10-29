@@ -16,7 +16,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-_CALC = re.compile(r"what is[ \t]+([^?]+?)[ \t]*\?", re.IGNORECASE)
+_CALC = re.compile(r"what is[ \t]+([^?]+)\?", re.IGNORECASE)
 _CAPITAL = re.compile(r"capital of[ \t]+([A-Za-z]+)", re.IGNORECASE)
 _CONVERT = re.compile(r"convert[ \t]+([^?\n]+)", re.IGNORECASE)
 _LAST_OBSERVATION = re.compile(r"Observation:[ \t]*([^\n]*)")
