@@ -17,6 +17,8 @@ and needs no provider credentials.
 | Method | Path | Body | Success |
 |---|---|---|---|
 | GET | `/health` | none | status, tool names, model name |
+| GET | `/ready` | none | readiness of the agent and toolset |
+| GET | `/metrics` | none | per-route request, error, and latency metrics (Prometheus text) |
 | POST | `/run` | `{"question", "max_steps"?}` | answer, finished, full trace |
 
 Errors return JSON `{"error": ...}` with a 4xx status. `max_steps` is bounded so a request
