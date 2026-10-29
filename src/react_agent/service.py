@@ -15,13 +15,15 @@ Endpoints
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from react_agent.core import ReActAgent
 from react_agent.llms import RulePolicyModel
+from react_agent.observability import ServiceMetrics
 from react_agent.tools import full_toolset
 from react_agent.trace import trace_to_dict
 
@@ -36,6 +38,7 @@ class AgentService:
 
     tool_names: tuple[str, ...]
     model_name: str
+    metrics: ServiceMetrics = field(default_factory=ServiceMetrics)
 
     @classmethod
     def build(cls) -> AgentService:
@@ -60,11 +63,9 @@ def _validate_run(body: Mapping[str, Any]) -> tuple[str, int]:
     return question, max_steps
 
 
-def handle(
+def _route(
     method: str, path: str, body: Mapping[str, Any], service: AgentService
 ) -> tuple[int, JsonObject]:
-    """Pure request handler: route a request to a status code and payload."""
-
     if method == "GET" and path == "/health":
         return 200, {
             "status": "ok",
@@ -80,6 +81,21 @@ def handle(
     return 404, {"error": f"no route for {method} {path}"}
 
 
+def handle(
+    method: str, path: str, body: Mapping[str, Any], service: AgentService
+) -> tuple[int, JsonObject]:
+    """Route a request, recording per-route metrics, and return status and payload."""
+
+    if method == "GET" and path == "/ready":
+        return 200, {"status": "ready"}
+    start = time.perf_counter()
+    status, payload = _route(method, path, body, service)
+    service.metrics.observe(
+        f"{method} {path}", (time.perf_counter() - start) * 1000.0, error=status >= 400
+    )
+    return status, payload
+
+
 class _Handler(BaseHTTPRequestHandler):  # pragma: no cover - exercised over sockets
     service: AgentService
 
@@ -92,6 +108,14 @@ class _Handler(BaseHTTPRequestHandler):  # pragma: no cover - exercised over soc
         self.wfile.write(encoded)
 
     def do_GET(self) -> None:
+        if self.path == "/metrics":
+            body = self.service.metrics.render_prometheus().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         status, payload = handle("GET", self.path, {}, self.service)
         self._respond(status, payload)
 
