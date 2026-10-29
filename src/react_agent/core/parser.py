@@ -24,13 +24,14 @@ import re
 from react_agent.core.steps import AgentAction, AgentFinish
 
 _THOUGHT = re.compile(
-    r"Thought:\s*(.*?)(?=\n\s*(?:Action|Final Answer)\s*:|\Z)", re.IGNORECASE | re.DOTALL
+    r"Thought:[ \t]*(.*?)(?=\n[ \t]*(?:Action|Final Answer)[ \t]*:|\Z)",
+    re.IGNORECASE | re.DOTALL,
 )
-_ACTION = re.compile(r"Action:\s*(.*?)\s*\n", re.IGNORECASE)
+_ACTION = re.compile(r"Action:[ \t]*([^\n]*)", re.IGNORECASE)
 _ACTION_INPUT = re.compile(
-    r"Action Input:\s*(.*?)(?=\n\s*Observation\s*:|\Z)", re.IGNORECASE | re.DOTALL
+    r"Action Input:[ \t]*(.*?)(?=\n[ \t]*Observation[ \t]*:|\Z)", re.IGNORECASE | re.DOTALL
 )
-_FINAL = re.compile(r"Final Answer:\s*(.*)", re.IGNORECASE | re.DOTALL)
+_FINAL = re.compile(r"Final Answer:[ \t]*(.*)", re.IGNORECASE | re.DOTALL)
 
 
 class ParseError(ValueError):
