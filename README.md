@@ -157,6 +157,26 @@ python -m react_agent run --verbose --json trace.json \
 - **Zero runtime dependencies.** The agent is pure Python; provider SDKs are optional and
   lazily imported.
 
+## Running the service
+
+A dependency-free HTTP service runs the agent with the offline, deterministic rule-policy
+model and the full toolset:
+
+```bash
+python -m react_agent serve --port 8000
+
+curl localhost:8000/health
+curl -s -X POST localhost:8000/run -d '{"question": "What is 2 * (3 + 4)?"}'
+```
+
+`GET /health` lists the tools and model; `POST /run` returns the answer, whether the agent
+finished, and the full typed trace. A production-style stress benchmark
+(`uv run python benchmarks/stress.py`) reports throughput and p50/p95/p99 latency; with the
+offline model a single core serves tens of thousands of bounded runs per second. The step
+budget bounds every request, which with a provider model bounds the number of model calls
+and therefore spend. See the [operations guide](docs/OPERATIONS.md), the
+[scaling and tradeoffs](docs/SCALING.md) document, and the [case study](docs/CASE_STUDY.md).
+
 ## Responsible AI
 
 - **Model card:** [docs/MODEL_CARD.md](docs/MODEL_CARD.md)
