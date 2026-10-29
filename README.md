@@ -175,6 +175,7 @@ finished, and the full typed trace. A production-style stress benchmark
 offline model a single core serves tens of thousands of bounded runs per second. The step
 budget bounds every request, which with a provider model bounds the number of model calls
 and therefore spend. See the [operations guide](docs/OPERATIONS.md), the
+The service also exposes `GET /ready` (readiness) and `GET /metrics` (per-route request, error, and latency metrics in Prometheus text format).
 [scaling and tradeoffs](docs/SCALING.md) document, and the [case study](docs/CASE_STUDY.md).
 
 ## Responsible AI
@@ -199,5 +200,5 @@ and therefore spend. See the [operations guide](docs/OPERATIONS.md), the
 
 ## License
 
-[MIT](LICENSE). Part of a 28-project artificial intelligence engineering portfolio by
+[MIT](LICENSE). Part of an artificial intelligence engineering portfolio by
 [adeoluo](https://github.com/adeoluo).
