@@ -8,37 +8,55 @@ config:
     primaryBorderColor: "#1E293B"
     primaryTextColor: "#1E293B"
     lineColor: "#64748B"
-    clusterBkg: "#E2E8F0"
+    clusterBkg: "#EEF2FF"
     clusterBorder: "#94A3B8"
 ---
-flowchart LR
+flowchart TB
+    classDef edge     fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
     classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
-    classDef external fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
+    classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    User([User / CLI]):::external
+    Client([Client]):::edge
 
-    subgraph Loop["ReAct Control Loop"]
-        Prompt[Prompt builder]:::core
-        Parser[Output parser]:::core
-        Agent[Agent]:::core
+    subgraph Edge["Service layer (stdlib HTTP, stateless)"]
+        direction TB
+        Router["Router<br/>GET /health | POST /run"]:::core
+        Validate["Validation<br/>bounds: question, max_steps"]:::control
     end
 
-    subgraph Tools["Tool Registry"]
-        Calc[(calculator)]:::data
-        Search[(search)]:::data
-        Memory[(memory)]:::data
+    subgraph Loop["Reason-act loop (bounded by step budget)"]
+        direction TB
+        Reason["Reason<br/>language model decision"]:::core
+        Parse["Parse action<br/>tool + input, or finish"]:::core
+        Act["Act<br/>dispatch to a tool"]:::core
+        Observe["Observe<br/>tool result"]:::core
     end
 
-    LLM{{Language model}}:::external
+    Model{{Language model<br/>rule-policy (offline) or provider}}:::edge
 
-    User -->|question| Agent
-    Agent -->|build| Prompt
-    Prompt -->|prompt| LLM
-    LLM -->|completion| Parser
-    Parser -->|Action| Agent
-    Agent -->|call tool| Calc
-    Agent -->|call tool| Search
-    Agent -->|call tool| Memory
-    Calc -.->|observation| Agent
-    Agent -->|Final Answer + trace| User
+    subgraph Tools["Tool registry (trust boundary, pure)"]
+        direction TB
+        Calc[calculator]:::data
+        Search[search / knowledge base]:::data
+        Convert[unit conversion, dates, text]:::data
+    end
+
+    Trace["Typed trace<br/>thought, action, observation"]:::obs
+
+    Client -->|JSON request| Router --> Validate
+    Validate -->|question| Reason
+    Reason -->|completion| Parse
+    Model -->|decision| Reason
+    Parse -->|tool call| Act
+    Act --> Calc
+    Act --> Search
+    Act --> Convert
+    Calc --> Observe
+    Search --> Observe
+    Convert --> Observe
+    Observe -->|within budget| Reason
+    Parse -->|finish| Router -->|JSON response + trace| Client
+    Observe -.-> Trace
+    Parse -.-> Trace
