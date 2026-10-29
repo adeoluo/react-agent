@@ -16,10 +16,30 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-_CALC = re.compile(r"what is[ \t]([^?]+)\?", re.IGNORECASE)
 _CAPITAL = re.compile(r"capital of[ \t]+([A-Za-z]+)", re.IGNORECASE)
 _CONVERT = re.compile(r"convert[ \t]+([^?\n]+)", re.IGNORECASE)
 _LAST_OBSERVATION = re.compile(r"Observation:[ \t]*([^\n]*)")
+
+
+def _extract_calculation(question: str) -> str | None:
+    """Return the expression in a "what is <expression>?" question, or None.
+
+    Implemented with linear string operations (no backtracking regex) because the
+    question is untrusted input.
+    """
+    lowered = question.lower()
+    marker = "what is"
+    start = lowered.find(marker)
+    if start < 0:
+        return None
+    rest = question[start + len(marker) :]
+    if not rest[:1].isspace():
+        return None
+    end = rest.find("?")
+    if end < 0:
+        return None
+    expression = rest[:end].strip()
+    return expression or None
 
 
 @dataclass
@@ -36,12 +56,9 @@ class RulePolicyModel:
         if observations:
             return f"Thought: I have the result.\nFinal Answer: {observations[-1].strip()}"
 
-        calc = _CALC.search(question)
-        if calc and any(ch.isdigit() for ch in calc.group(1)):
-            return (
-                "Thought: I will calculate this.\n"
-                f"Action: calculator\nAction Input: {calc.group(1).strip()}\n"
-            )
+        calc = _extract_calculation(question)
+        if calc and any(ch.isdigit() for ch in calc):
+            return f"Thought: I will calculate this.\nAction: calculator\nAction Input: {calc}\n"
 
         capital = _CAPITAL.search(question)
         if capital:
