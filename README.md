@@ -19,12 +19,12 @@
 
 Agent frameworks hide the one thing worth understanding: the control loop that turns a
 language model into something that *acts*. This project implements the ReAct pattern
-(interleaved **Rea**soning and **Act**ing) from first principles, with **zero runtime
+(interleaved **Rea**soning and **Act**ing) from scratch, with **zero runtime
 dependencies**, so the mechanism is fully visible - how a prompt is built, how the model's
 output is parsed into an action, how a tool is executed, and how the observation feeds the
 next step.
 
-Two properties make it principle-level rather than a toy: every run is a **fully auditable
+Two properties make it production-grade rather than a toy: every run is a **fully auditable
 trace**, and the loop **recovers** from malformed output, unknown tools, and tool failures
 by turning each into feedback the model can act on, instead of crashing.
 
