@@ -85,6 +85,28 @@ Benchmark: 6/6 passed (100.0%), mean 1.0 steps
 The control loop and tools are pure-Python and offline, so the agent's own overhead is
 negligible next to the model calls a production deployment would make.
 
+### Scale
+
+`benchmarks/scale.py` runs the rule-policy agent over progressively larger synthetic
+batches of arithmetic tasks, reporting wall-clock time, run throughput, peak memory
+(stdlib `tracemalloc`, measured in a separate pass so its per-allocation hook does not
+distort timing), and the task success rate. Measured on this machine (`uv run python
+benchmarks/scale.py`):
+
+| Agent runs | Seconds | Runs/sec | Peak MiB | Success |
+|---:|---:|---:|---:|---:|
+| 1,000 | 0.20 | ~5,100 | 0.2 | 1.00 |
+| 2,000 | 0.41 | ~4,900 | 0.3 | 1.00 |
+| 4,000 | 0.53 | ~7,500 | 0.5 | 1.00 |
+| 8,000 | 1.37 | ~5,900 | 1.0 | 1.00 |
+
+The shape is the point: the ReAct loop is O(1) work per task, so throughput stays
+roughly flat as the batch grows while peak memory rises linearly with the retained
+per-task traces and answers; success stays at 100%. These numbers are from synthetic
+tasks on a pure-Python loop with an offline deterministic model -- they measure harness
+overhead, **not** a frontier model's latency, and are **not** a comparison against a
+hosted agent framework.
+
 ## Demonstration
 
 Fully offline, via `python -m react_agent demonstrate`:
