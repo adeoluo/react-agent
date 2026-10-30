@@ -36,6 +36,16 @@ def test_trace_round_trips() -> None:
     assert restored.steps[0].action.tool == "echo"
 
 
+def test_trace_round_trip_preserves_raw_action() -> None:
+    # Regression: AgentAction.raw was dropped on serialization, so a round trip
+    # was not lossless as the module docstring claims.
+    original = _run()
+    restored = trace_from_json(trace_to_json(original))  # type: ignore[arg-type]
+    assert restored.steps == original.steps  # type: ignore[attr-defined]
+    for before, after in zip(original.steps, restored.steps, strict=True):  # type: ignore[attr-defined]
+        assert after.action.raw == before.action.raw
+
+
 def test_logging_callbacks_emit_lines() -> None:
     lines: list[str] = []
     callbacks = logging_callbacks(sink=lines.append)
