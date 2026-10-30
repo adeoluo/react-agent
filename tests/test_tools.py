@@ -43,6 +43,19 @@ def test_calculator_reports_division_by_zero() -> None:
         CalculatorTool()("1 / 0")
 
 
+def test_calculator_preserves_integer_precision() -> None:
+    # Regression: coercing operands to float rounded large integer products.
+    assert CalculatorTool()("99999999 * 99999999") == "9999999800000001"
+
+
+def test_calculator_overflow_becomes_tool_error() -> None:
+    # Regression: OverflowError / non-finite results escaped and crashed the run.
+    with pytest.raises(ToolError):
+        CalculatorTool()("10.0 ** 1000")
+    with pytest.raises(ToolError):
+        CalculatorTool()("1e308 * 10")
+
+
 # --------------------------------------------------------------------------- #
 # Memory
 # --------------------------------------------------------------------------- #

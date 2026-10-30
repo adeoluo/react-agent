@@ -8,12 +8,15 @@ model (or an upstream prompt injection) cannot execute arbitrary code through th
 from __future__ import annotations
 
 import ast
+import math
 import operator
 from collections.abc import Callable
 
 from react_agent.core.tool import ToolError
 
-_BINARY: dict[type[ast.operator], Callable[[float, float], float]] = {
+Number = int | float
+
+_BINARY: dict[type[ast.operator], Callable[[Number, Number], Number]] = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
@@ -45,14 +48,22 @@ class CalculatorTool:
             raise ToolError(f"invalid expression {expression!r}: {error}") from None
         except ZeroDivisionError:
             raise ToolError("division by zero") from None
-        if value == int(value):
-            return str(int(value))
+        except OverflowError:
+            raise ToolError("numeric overflow") from None
+        if isinstance(value, float):
+            if not math.isfinite(value):
+                raise ToolError("result is not a finite number")
+            if value == int(value):
+                return str(int(value))
+            return str(value)
         return str(value)
 
 
-def _evaluate(node: ast.expr) -> float:
+def _evaluate(node: ast.expr) -> Number:
     if isinstance(node, ast.Constant) and isinstance(node.value, int | float):
-        return float(node.value)
+        # Keep the native type: integers stay exact (Python ints are unbounded),
+        # so large products are not silently rounded through float.
+        return node.value
     if isinstance(node, ast.UnaryOp):
         operand = _evaluate(node.operand)
         if isinstance(node.op, ast.USub):
