@@ -26,6 +26,7 @@ def trace_to_dict(result: AgentResult) -> dict[str, Any]:
                 "thought": step.action.thought,
                 "tool": step.action.tool,
                 "tool_input": step.action.tool_input,
+                "raw": step.action.raw,
                 "observation": step.observation,
             }
             for step in result.steps
@@ -41,6 +42,7 @@ def trace_from_dict(payload: dict[str, Any]) -> AgentResult:
                 thought=item["thought"],
                 tool=item["tool"],
                 tool_input=item["tool_input"],
+                raw=item.get("raw", ""),
             ),
             observation=item["observation"],
         )
