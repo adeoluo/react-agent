@@ -5,55 +5,44 @@ flowchart LR
     classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Client(["HTTP client<br/>JSON question"]):::edge
-    Cli(["CLI<br/>tools, demonstrate, benchmark, run, serve"]):::edge
-    Provider(["OpenAI or Anthropic API<br/>optional adapters"]):::edge
-
-    subgraph Io["Interfaces (stdlib HTTP, stateless)"]
+    subgraph Interfaces["Interfaces"]
         direction TB
-        Router["Request router<br/>/health, /run"]:::core
-        Validate["Request validation<br/>question up to 2000 chars,<br/>max_steps 1 to 12"]:::control
+        Cli(["CLI<br/>run, benchmark, serve"]):::edge
+        Client(["HTTP client<br/>JSON question"]):::edge
+        Router["HTTP router<br/>/health, /run"]:::core
+        Validate["Validation<br/>question, max_steps"]:::control
+        Cli ~~~ Client --> Router --> Validate
     end
 
-    subgraph Loop["Core logic (ReAct loop)"]
+    subgraph Core["ReAct loop"]
         direction TB
-        Agent["Agent<br/>reason, act, observe"]:::core
-        Prompt["Prompt builder<br/>grammar, tools, scratchpad"]:::core
-        Parser["Output parser<br/>action or final answer"]:::core
-        Budgets["Budgets and recovery<br/>max_steps, size caps, tool retries"]:::control
-        Offline["Offline models<br/>rule policy, scripted"]:::core
+        Agent["Agent loop<br/>reason, act, observe"]:::core
+        Prompt["Prompt builder<br/>tools, scratchpad"]:::core
+        Models["Offline models<br/>rule policy, scripted"]:::core
+        Parser["Output parser<br/>action or answer"]:::core
+        Budgets["Budgets, recovery<br/>steps, caps, retries"]:::control
+        Provider(["OpenAI or Anthropic<br/>optional adapters"]):::edge
+        Agent --> Prompt --> Models --> Parser --> Budgets ~~~ Provider
     end
 
-    subgraph State["Data and state"]
+    subgraph State["Tools and state"]
         direction TB
         Registry[("ToolRegistry<br/>10 built-in tools")]:::data
-        Kb[("Bundled knowledge base<br/>search and exact lookup")]:::data
-        Scratch[("Scratchpad<br/>thought, action, observation")]:::data
+        Kb[("Knowledge base<br/>bundled, offline")]:::data
+        Scratch[("Scratchpad<br/>thought, action, obs")]:::data
+        Registry --> Kb ~~~ Scratch
     end
 
-    subgraph Obs["Evaluation and observability"]
+    subgraph Obs["Evaluation and logs"]
         direction TB
-        Trace["AgentResult trace<br/>typed steps, JSON export"]:::obs
-        Callbacks["Callbacks<br/>step, action, observation logs"]:::obs
+        Trace["AgentResult trace<br/>typed steps, JSON"]:::obs
+        Callbacks["Callbacks<br/>step and action logs"]:::obs
         Bench["Benchmark suite<br/>task success rate"]:::obs
-        Metrics["/metrics<br/>Prometheus counts, latency"]:::obs
+        Metrics["/metrics<br/>Prometheus text"]:::obs
+        Trace ~~~ Callbacks ~~~ Bench ~~~ Metrics
     end
 
-    Client -->|POST JSON| Router
-    Cli -->|serve| Router
-    Cli -->|run, demonstrate| Agent
-    Cli -->|benchmark| Bench
-    Router -.->|checks| Validate
-    Router -->|question| Agent
-    Agent -->|build| Prompt
-    Agent -->|complete| Offline
-    Agent -.->|optional| Provider
-    Agent -->|parse| Parser
-    Agent -.-> Budgets
-    Agent -->|call tool| Registry
-    Registry -.->|lookup| Kb
-    Agent -->|append step| Scratch
-    Agent --> Trace
-    Agent -.-> Callbacks
-    Bench -.->|runs tasks| Agent
-    Router -.->|timings| Metrics
+    Interfaces -->|question| Core
+    Core -->|tool calls| State
+    State -.->|steps| Obs
+    Core -->|events| Obs
