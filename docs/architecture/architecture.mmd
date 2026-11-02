@@ -1,62 +1,59 @@
----
-title: System Architecture - ReAct Agent
-config:
-  theme: base
-  themeVariables:
-    fontFamily: "Inter, system-ui, sans-serif"
-    primaryColor: "#F8FAFC"
-    primaryBorderColor: "#1E293B"
-    primaryTextColor: "#1E293B"
-    lineColor: "#64748B"
-    clusterBkg: "#EEF2FF"
-    clusterBorder: "#94A3B8"
----
-flowchart TD
+flowchart LR
     classDef edge     fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
     classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Client([Client]):::edge
+    Client(["HTTP client<br/>JSON question"]):::edge
+    Cli(["CLI<br/>tools, demonstrate, benchmark, run, serve"]):::edge
+    Provider(["OpenAI or Anthropic API<br/>optional adapters"]):::edge
 
-    subgraph Edge["Service layer (stdlib HTTP, stateless)"]
+    subgraph Io["Interfaces (stdlib HTTP, stateless)"]
         direction TB
-        Router["Router<br/>GET /health | POST /run"]:::core
-        Validate["Validation<br/>bounds: question, max_steps"]:::control
+        Router["Request router<br/>/health, /run"]:::core
+        Validate["Request validation<br/>question up to 2000 chars,<br/>max_steps 1 to 12"]:::control
     end
 
-    subgraph Loop["Reason-act loop (bounded by step budget)"]
+    subgraph Loop["Core logic (ReAct loop)"]
         direction TB
-        Reason["Reason<br/>language model decision"]:::core
-        Parse["Parse action<br/>tool + input, or finish"]:::core
-        Act["Act<br/>dispatch to a tool"]:::core
-        Observe["Observe<br/>tool result"]:::core
+        Agent["Agent<br/>reason, act, observe"]:::core
+        Prompt["Prompt builder<br/>grammar, tools, scratchpad"]:::core
+        Parser["Output parser<br/>action or final answer"]:::core
+        Budgets["Budgets and recovery<br/>max_steps, size caps, tool retries"]:::control
+        Offline["Offline models<br/>rule policy, scripted"]:::core
     end
 
-    Model{{Language model<br/>rule-policy (offline) or provider}}:::edge
-
-    subgraph Tools["Tool registry (trust boundary, pure)"]
+    subgraph State["Data and state"]
         direction TB
-        Calc[calculator]:::data
-        Search[search / knowledge base]:::data
-        Convert[unit conversion, dates, text]:::data
+        Registry[("ToolRegistry<br/>10 built-in tools")]:::data
+        Kb[("Bundled knowledge base<br/>search and exact lookup")]:::data
+        Scratch[("Scratchpad<br/>thought, action, observation")]:::data
     end
 
-    Trace["Typed trace<br/>thought, action, observation"]:::obs
+    subgraph Obs["Evaluation and observability"]
+        direction TB
+        Trace["AgentResult trace<br/>typed steps, JSON export"]:::obs
+        Callbacks["Callbacks<br/>step, action, observation logs"]:::obs
+        Bench["Benchmark suite<br/>task success rate"]:::obs
+        Metrics["/metrics<br/>Prometheus counts, latency"]:::obs
+    end
 
-    Client -->|JSON request| Router --> Validate
-    Validate -->|question| Reason
-    Reason -->|completion| Parse
-    Model -->|decision| Reason
-    Parse -->|tool call| Act
-    Act --> Calc
-    Act --> Search
-    Act --> Convert
-    Calc --> Observe
-    Search --> Observe
-    Convert --> Observe
-    Observe -->|within budget| Reason
-    Parse -->|finish| Router -->|JSON response + trace| Client
-    Observe -.-> Trace
-    Parse -.-> Trace
+    Client -->|POST JSON| Router
+    Cli -->|serve| Router
+    Cli -->|run, demonstrate| Agent
+    Cli -->|benchmark| Bench
+    Router -.->|checks| Validate
+    Router -->|question| Agent
+    Agent -->|build| Prompt
+    Agent -->|complete| Offline
+    Agent -.->|optional| Provider
+    Agent -->|parse| Parser
+    Agent -.-> Budgets
+    Agent -->|call tool| Registry
+    Registry -.->|lookup| Kb
+    Agent -->|append step| Scratch
+    Agent --> Trace
+    Agent -.-> Callbacks
+    Bench -.->|runs tasks| Agent
+    Router -.->|timings| Metrics

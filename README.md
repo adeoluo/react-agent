@@ -31,6 +31,8 @@ into feedback the model can act on, instead of crashing.
   <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
+<sub>Legend: amber = entry points and external systems, indigo = core logic, green = data and state, blue = validation and control, grey = observability and outputs.</sub>
+
 The **Agent** builds a **prompt** from the question, the tool descriptions, and the running
 scratchpad; the **language model** returns a Thought plus an Action; the **parser** turns
 that text into a structured decision; the chosen **tool** runs and its observation is
