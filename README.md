@@ -168,6 +168,12 @@ python -m react_agent benchmark    # run the offline benchmark suite
 
 ## Usage
 
+A real run of the offline ReAct loop: thoughts, tool calls, observations, and the final answer. Regenerate with `vhs docs/demo/demonstrate.tape`.
+
+<p align="center">
+  <img src="docs/demo/demonstrate.gif" alt="react-agent offline ReAct loop" width="860">
+</p>
+
 ### Demonstration
 
 Fully offline, via `python -m react_agent demonstrate`:
