@@ -17,7 +17,13 @@ from react_agent.core.callbacks import Callbacks
 from react_agent.core.llm import LanguageModel
 from react_agent.core.parser import ParseError, parse_output
 from react_agent.core.steps import AgentAction, AgentFinish, AgentResult, TraceStep
-from react_agent.core.tool import FunctionTool, Tool, ToolError, ToolRegistry
+from react_agent.core.tool import (
+    FunctionTool,
+    RetryableToolError,
+    Tool,
+    ToolError,
+    ToolRegistry,
+)
 
 __all__ = [
     "AgentAction",
@@ -28,6 +34,7 @@ __all__ = [
     "LanguageModel",
     "ParseError",
     "ReActAgent",
+    "RetryableToolError",
     "Tool",
     "ToolError",
     "ToolRegistry",

@@ -119,14 +119,21 @@ def _handle_demo(_: argparse.Namespace) -> int:
 
 
 def _handle_benchmark(_: argparse.Namespace) -> int:
-    from react_agent.benchmark import run_benchmark
+    from react_agent.benchmark import compare_to_single_shot, run_benchmark
     from react_agent.llms import RulePolicyModel
     from react_agent.suite import SUITE
     from react_agent.tools import full_toolset
 
-    agent = ReActAgent(RulePolicyModel(), full_toolset(), max_steps=4)
+    agent = ReActAgent(RulePolicyModel(), full_toolset(), max_steps=6)
     report = run_benchmark(agent, SUITE)
     print(report.summary())
+    print()
+    comparison = compare_to_single_shot(
+        ReActAgent(RulePolicyModel(), full_toolset(), max_steps=6),
+        ReActAgent(RulePolicyModel(), full_toolset(), max_steps=1),
+        SUITE,
+    )
+    print(comparison.summary())
     return 0 if report.success_rate == 1.0 else 1
 
 

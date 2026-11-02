@@ -7,7 +7,7 @@ success-rate number with the offline rule-policy model and the full toolset.
 
 from __future__ import annotations
 
-from react_agent.benchmark import BenchmarkTask, contains
+from react_agent.benchmark import BenchmarkTask, contains, every
 
 SUITE: tuple[BenchmarkTask, ...] = (
     BenchmarkTask(
@@ -45,5 +45,17 @@ SUITE: tuple[BenchmarkTask, ...] = (
         question="Convert 100 C to F?",
         judge=contains("212"),
         tags=("convert_units",),
+    ),
+    BenchmarkTask(
+        name="multi-capital-and-arithmetic",
+        question="What is the capital of France, and what is 21 * 2?",
+        judge=every("Paris", "42"),
+        tags=("knowledge_base", "calculator", "multi-step"),
+    ),
+    BenchmarkTask(
+        name="multi-two-sums",
+        question="What is 10 + 5, and what is 6 * 7?",
+        judge=every("15", "42"),
+        tags=("calculator", "multi-step"),
     ),
 )

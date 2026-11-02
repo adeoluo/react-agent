@@ -50,13 +50,19 @@ A complete, from-scratch agent toolkit, all offline and dependency-free:
 - **10 built-in tools** across arithmetic, retrieval, dates, units, and text, plus a
   structured knowledge base - all safe (the calculator uses an AST allow-list, never
   `eval`) and all raising recoverable `ToolError`s on bad input.
-- **Robust control loop** that recovers from malformed output, unknown tools, and tool
-  failures by turning each into an observation.
-- **Observability** via `Callbacks` hooks (step, action, observation, finish) and a
-  ready-made logging-callbacks factory; a `--verbose` CLI flag streams each step.
-- **Budgets**: `max_steps` and an optional `max_prompt_chars` cap (a token-cost proxy).
-- **Benchmarking**: a `BenchmarkTask` + `run_benchmark` harness with a six-task suite and
-  a deterministic rule-policy model, producing a real, reproducible **success rate**.
+- **Robust control loop** that recovers from malformed output, unknown tools, declared
+  *and undeclared* tool exceptions (timeouts, bugs), non-string or oversized tool output,
+  and injection-style tool text, by turning each into an observation - and always
+  terminates within `max_steps`.
+- **Retry and recovery**: a tool can raise `RetryableToolError` to have the agent retry it
+  (`tool_retries`) before the failure is surfaced as an observation to re-plan against.
+- **Observability** via `Callbacks` hooks (step, action, observation, tool-retry, finish)
+  and a ready-made logging-callbacks factory; a `--verbose` CLI flag streams each step.
+- **Budgets**: `max_steps`, an optional `max_prompt_chars` cap (a token-cost proxy), and a
+  `max_observation_chars` cap that bounds untrusted tool output.
+- **Benchmarking**: a `BenchmarkTask` + `run_benchmark` harness with an eight-task suite
+  (including multi-step questions) and a deterministic rule-policy model, producing a real,
+  reproducible **success rate** and a single-shot baseline comparison.
 - **Trace export**: lossless JSON serialization of a full run (`--json PATH`), the
   substrate for trace viewers and offline analysis.
 
@@ -66,12 +72,32 @@ The offline agent, driven by the deterministic rule-policy model over the full t
 solves the built-in suite end to end (`python -m react_agent benchmark`):
 
 ```text
-Benchmark: 6/6 passed (100.0%), mean 1.0 steps
+Benchmark: 8/8 passed (100.0%), mean 1.2 steps
   [PASS] arithmetic-basic (1 steps)
   [PASS] capital-france (1 steps)
-  [PASS] convert-temperature (1 steps)
+  [PASS] multi-capital-and-arithmetic (2 steps)
   ...
+
+Loop vs. single-shot baseline:
+  ReAct loop     : 8/8 passed (100.0%), mean 1.2 steps
+  single-shot    : 0/8 passed (0.0%), mean 1.0 steps
+  loop lift      : +100.0 percentage points
 ```
+
+The suite includes multi-step questions (for example "the capital of France, *and* 21 times
+2") that need more than one tool call. To show the loop is doing the work, the harness also
+runs a **single-shot baseline** - the same model and tools with a one-step budget (one model
+turn, no observe-then-replan). It solves **0/8**, because every task needs a tool
+observation fed back into reasoning, while the full loop solves **8/8**: a **+100 percentage
+point** lift that is the ReAct loop itself.
+
+| Agent | Tasks passed | Success rate | Mean steps |
+|---|---:|---:|---:|
+| ReAct loop (`max_steps=6`) | 8 / 8 | 100.0% | 1.2 |
+| single-shot baseline (`max_steps=1`) | 0 / 8 | 0.0% | 1.0 |
+
+These numbers come from the deterministic offline rule-policy model; in production a frontier
+model replaces it behind the same interface.
 
 ### Performance
 
@@ -79,11 +105,13 @@ Benchmark: 6/6 passed (100.0%), mean 1.0 steps
 
 | Operation | Throughput |
 |---|---:|
-| Full agent runs (plan, act, observe, answer) | ~46,000 runs / sec |
-| Calculator tool calls (AST evaluation) | ~190,000 calls / sec |
+| Full agent runs (plan, act, observe, answer) over the eight-task suite | ~20,000-27,000 runs / sec |
+| Calculator tool calls (AST evaluation) | ~150,000 calls / sec |
 
 The control loop and tools are pure-Python and offline, so the agent's own overhead is
-negligible next to the model calls a production deployment would make.
+negligible next to the model calls a production deployment would make. The suite now
+includes two-tool-call questions, so each run averages more than one step; the numbers are
+environment-specific and reproduced per machine.
 
 ### Scale
 
@@ -126,14 +154,23 @@ Final Answer: The capital of France is Paris, and 21 times 2 is 42.
 
 ## Robustness
 
-The control loop is tested against each failure mode it is designed to survive:
+The control loop is tested against each failure mode it is designed to survive - including
+hostile and buggy tools - and in every case it turns the failure into an observation and
+still terminates within `max_steps`:
 
 | Failure | How the loop recovers |
 |---|---|
 | Malformed model output | A `ParseError` becomes a formatting reminder observation |
 | Unknown tool requested | The observation lists the valid tool names |
 | A tool raises `ToolError` | The error message becomes the observation |
-| No answer within budget | The run stops at `max_steps` and reports `finished = False` |
+| A tool raises an *undeclared* exception (bug, timeout) | Contained and turned into an observation; never propagated |
+| A tool returns non-string or oversized output | Coerced to a string and truncated to `max_observation_chars` |
+| Injection-style tool output (`Final Answer:` in the text) | Recorded as inert data; only the model's own completions can finish the run |
+| A transient tool failure (`RetryableToolError`) | Retried up to `tool_retries` times, then surfaced as an observation to re-plan |
+| No answer within budget / a looping model | The run stops at `max_steps` and reports `finished = False` |
+
+These are enforced by `tests/test_adversarial.py`, which drives each case with a scripted
+model so the guarantees are deterministic and offline.
 
 ## Quickstart
 
@@ -218,7 +255,8 @@ The service also exposes `GET /ready` (readiness) and `GET /metrics` (per-route 
 
 - [ ] Streaming token output for provider models
 - [ ] Reflection step (self-critique) before the final answer
-- [ ] A benchmark harness scoring task success over a suite of questions
+- [x] A benchmark harness scoring task success over a suite of questions
+- [x] Adversarial-robustness tests and tool retry/recovery
 
 ## License
 

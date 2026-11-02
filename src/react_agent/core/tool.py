@@ -22,6 +22,16 @@ class ToolError(Exception):
     """
 
 
+class RetryableToolError(ToolError):
+    """A :class:`ToolError` the agent should retry before surfacing as an observation.
+
+    Some failures are transient - a flaky lookup, a momentarily unavailable resource. A
+    tool raises this (instead of a plain :class:`ToolError`) to tell the agent the action
+    is worth retrying a bounded number of times. If every retry still fails, the agent
+    turns the final error into an observation like any other, so the run still terminates.
+    """
+
+
 @runtime_checkable
 class Tool(Protocol):
     """A named, described action mapping a string input to a string observation."""

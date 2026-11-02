@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from react_agent.benchmark import (
+    BaselineComparison,
     BenchmarkReport,
     BenchmarkTask,
     TaskOutcome,
+    compare_to_single_shot,
     contains,
     equals,
+    every,
     run_benchmark,
 )
 from react_agent.core import ReActAgent
@@ -67,3 +70,32 @@ def test_rule_policy_handles_unknown() -> None:
     model = RulePolicyModel()
     out = model.complete("Question: explain quantum gravity\nThought:")
     assert "Final Answer" in out
+
+
+def test_every_judge_requires_all_parts() -> None:
+    judge = every("Paris", "42")
+    assert judge("The capital is Paris and the product is 42.")
+    assert not judge("The capital is Paris.")
+
+
+def test_rule_policy_solves_multi_step_question() -> None:
+    agent = ReActAgent(RulePolicyModel(), full_toolset(), max_steps=6)
+    result = agent.run("What is the capital of France, and what is 21 * 2?")
+    assert result.finished
+    assert result.step_count == 2  # one tool call per sub-question
+    assert "Paris" in result.answer
+    assert "42" in result.answer
+
+
+def test_single_shot_baseline_fails_without_the_loop() -> None:
+    comparison = compare_to_single_shot(
+        ReActAgent(RulePolicyModel(), full_toolset(), max_steps=6),
+        ReActAgent(RulePolicyModel(), full_toolset(), max_steps=1),
+        SUITE,
+    )
+    assert isinstance(comparison, BaselineComparison)
+    # The loop solves every task; a single model turn with no tool feedback solves none.
+    assert comparison.react.success_rate == 1.0
+    assert comparison.baseline.success_rate == 0.0
+    assert comparison.lift == 1.0
+    assert "loop lift" in comparison.summary()
