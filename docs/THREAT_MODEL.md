@@ -21,7 +21,7 @@
 | Unbounded loops / cost | Model never emits a Final Answer | Resource / token blowup | Hard `max_steps` budget; malformed steps also consume the budget |
 | Unknown or side-effecting tool | Model names a tool that is not registered | Unexpected action | Unknown tools are rejected and reported; only explicitly registered tools can run |
 | Secret leakage | API keys in logs or traces | Credential compromise | Keys read from environment only; never logged; `.env` is git-ignored |
-| Supply-chain compromise | Malicious dependency | Code execution | No third-party runtime packages; provider SDKs are optional; Dependabot and CodeQL in CI |
+| Supply-chain compromise | Malicious dependency | Code execution | No third-party runtime packages; provider SDKs are optional; development tools pinned in `uv.lock`; CodeQL in continuous integration |
 
 ## Residual risk
 
