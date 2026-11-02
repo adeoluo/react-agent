@@ -1,0 +1,54 @@
+# ReAct Agent
+
+> A reasoning-and-acting agent built from scratch: tool use, a transparent control loop, and full step tracing.
+
+Languages: Python. License: MIT. Source: https://github.com/adeoluo/react-agent
+
+## Docs
+
+- [README](https://github.com/adeoluo/react-agent/blob/main/README.md): motivation, architecture, results, quickstart, usage, design decisions, testing, responsible ai, limitations, roadmap
+- [AGENTS.md](https://github.com/adeoluo/react-agent/blob/main/AGENTS.md): layout, commands and conventions for changing the code
+- [Architecture diagram](https://github.com/adeoluo/react-agent/blob/main/docs/architecture/architecture.mmd): Mermaid source of the component diagram
+- [End-to-End Case Study - A Tool-Using Agent Run](https://github.com/adeoluo/react-agent/blob/main/docs/CASE_STUDY.md)
+- [Data Card - ReAct Agent](https://github.com/adeoluo/react-agent/blob/main/docs/DATA_CARD.md)
+- [Definition of Done](https://github.com/adeoluo/react-agent/blob/main/docs/DEFINITION_OF_DONE.md)
+- [System Card - ReAct Agent](https://github.com/adeoluo/react-agent/blob/main/docs/MODEL_CARD.md)
+- [Operations Guide - ReAct Agent](https://github.com/adeoluo/react-agent/blob/main/docs/OPERATIONS.md)
+- [Scaling and Design Tradeoffs - ReAct Agent](https://github.com/adeoluo/react-agent/blob/main/docs/SCALING.md)
+- [Threat Model - ReAct Agent](https://github.com/adeoluo/react-agent/blob/main/docs/THREAT_MODEL.md)
+- [ADR-0001: Record architecture decisions](https://github.com/adeoluo/react-agent/blob/main/docs/adr/0001-record-architecture-decisions.md)
+- [ADR-0002: Structural Protocol interfaces for tools and models](https://github.com/adeoluo/react-agent/blob/main/docs/adr/0002-protocol-interfaces.md)
+- [ADR-0003: Treat failures as observations, not exceptions](https://github.com/adeoluo/react-agent/blob/main/docs/adr/0003-error-recovery-as-observation.md)
+- [ADR-NNNN: <short title>](https://github.com/adeoluo/react-agent/blob/main/docs/adr/template.md)
+- [Changelog](https://github.com/adeoluo/react-agent/blob/main/CHANGELOG.md): release history
+
+## Source
+
+- [src/react_agent/__init__.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/__init__.py): ReAct Agent - a reasoning-and-acting agent built from scratch.
+- [src/react_agent/benchmark.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/benchmark.py): A benchmark harness for measuring agent task success.
+- [src/react_agent/cli.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/cli.py): Command-line interface for the ReAct agent.
+- [src/react_agent/core/__init__.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/__init__.py): Core abstractions for the ReAct agent.
+- [src/react_agent/core/agent.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/agent.py): The ReAct control loop.
+- [src/react_agent/core/callbacks.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/callbacks.py): Observability hooks for an agent run.
+- [src/react_agent/core/llm.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/llm.py): The language model interface the agent reasons with.
+- [src/react_agent/core/parser.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/parser.py): Parsing the model's ReAct output into a structured decision.
+- [src/react_agent/core/prompt.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/prompt.py): Constructing the ReAct prompt from the task, tools, and running scratchpad.
+- [src/react_agent/core/steps.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/steps.py): Typed records for the agent's reasoning trace.
+- [src/react_agent/core/tool.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/core/tool.py): Tools: the actions a ReAct agent can take in the world.
+- [src/react_agent/llms/__init__.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/llms/__init__.py): Language models: offline scripted model and optional provider adapters.
+- [src/react_agent/llms/providers.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/llms/providers.py): Optional adapters for frontier model providers.
+- [src/react_agent/llms/rule_policy.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/llms/rule_policy.py): A deterministic rule-based policy model for offline benchmarking.
+- [src/react_agent/llms/scripted.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/llms/scripted.py): A scripted language model for offline demonstrations and tests.
+- [src/react_agent/logging_callbacks.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/logging_callbacks.py): A logging-callbacks factory.
+- [src/react_agent/observability.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/observability.py): In-process request metrics for the HTTP service.
+- [src/react_agent/service.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/service.py): A standard-library HTTP service exposing the ReAct agent.
+- [src/react_agent/suite.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/suite.py): A small built-in benchmark suite for the agent.
+- [src/react_agent/tools/__init__.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/__init__.py): Built-in tools and ready-made toolsets.
+- [src/react_agent/tools/calculator.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/calculator.py): A safe arithmetic calculator tool.
+- [src/react_agent/tools/datetime_tools.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/datetime_tools.py): Date and time tools.
+- [src/react_agent/tools/knowledge_base.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/knowledge_base.py): A structured knowledge-base tool with exact-key lookup.
+- [src/react_agent/tools/memory.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/memory.py): A simple scratch-memory tool the agent can write to and read from.
+- [src/react_agent/tools/search.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/search.py): A deterministic, offline search tool over a small bundled knowledge base.
+- [src/react_agent/tools/text.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/text.py): String utility tools.
+- [src/react_agent/tools/units.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/tools/units.py): Unit conversion tool.
+- [src/react_agent/trace.py](https://github.com/adeoluo/react-agent/blob/main/src/react_agent/trace.py): Serializing an agent run to JSON and back.
