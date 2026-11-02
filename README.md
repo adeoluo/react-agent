@@ -246,6 +246,12 @@ The offline benchmark suite, then the tool list.
   <img src="docs/demo/benchmark.gif" alt="The offline benchmark suite, then the tool list" width="860">
 </p>
 
+The HTTP service running the ReAct loop on a question.
+
+<p align="center">
+  <img src="docs/demo/http.gif" alt="The HTTP service running the ReAct loop on a question" width="860">
+</p>
+
 ## Design decisions
 
 - **Structural `Protocol` typing** for `Tool` and `LanguageModel`: any object with the
