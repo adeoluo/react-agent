@@ -236,6 +236,16 @@ bounds the number of model calls and therefore spend. See the
 [operations guide](docs/OPERATIONS.md), the [scaling and tradeoffs](docs/SCALING.md)
 document, and the [case study](docs/CASE_STUDY.md).
 
+### Demos
+
+Recorded from real runs with [vhs](https://github.com/charmbracelet/vhs); each tape is in `docs/demo/`.
+
+The offline benchmark suite, then the tool list.
+
+<p align="center">
+  <img src="docs/demo/benchmark.gif" alt="The offline benchmark suite, then the tool list" width="860">
+</p>
+
 ## Design decisions
 
 - **Structural `Protocol` typing** for `Tool` and `LanguageModel`: any object with the
