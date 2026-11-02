@@ -8,7 +8,7 @@ The operational contract of the agent service.
 uv run python -m react_agent serve --host 0.0.0.0 --port 8000
 ```
 
-A standard-library HTTP server with **zero runtime dependencies**. It runs the agent with
+A standard-library HTTP server. It runs the agent with
 the offline, deterministic rule-policy model and the full toolset, so it is reproducible
 and needs no provider credentials.
 

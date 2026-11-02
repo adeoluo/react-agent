@@ -1,4 +1,4 @@
-"""A dependency-free HTTP service exposing the ReAct agent.
+"""A standard-library HTTP service exposing the ReAct agent.
 
 The service runs the agent with the offline, deterministic rule-policy model and
 the full toolset, so it answers questions and returns a complete, auditable

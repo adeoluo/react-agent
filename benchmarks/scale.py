@@ -11,7 +11,7 @@ so throughput stays roughly flat as the batch grows, while peak memory rises
 linearly with the retained per-task traces and answers. Success stays at 100%
 because the rule policy solves every generated task.
 
-The data is synthetic and the loop is from-scratch pure Python with an offline
+The data is synthetic and the loop is from-scratch Python with an offline
 deterministic model: these numbers measure the harness overhead, not a frontier
 model's latency, and are not a comparison against a hosted agent framework. The
 point is to show how this implementation scales, honestly.
@@ -103,7 +103,7 @@ def _peak_memory(suite: list[BenchmarkTask]) -> int:
 
 
 def main() -> None:
-    print("Synthetic tasks; from-scratch pure-Python ReAct loop with an offline model.")
+    print("Synthetic tasks; from-scratch Python ReAct loop with an offline model.")
     print("Measures harness overhead, not a frontier model's latency or a hosted framework.\n")
     header = f"{'runs':>8}{'seconds':>10}{'runs/sec':>12}{'peak MiB':>11}{'success':>10}"
     print(header)

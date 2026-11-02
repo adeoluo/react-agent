@@ -5,12 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/adeoluo/react-agent/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://github.com/adeoluo/react-agent/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-93%25-brightgreen">
+  <a href="https://github.com/adeoluo/react-agent/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeoluo/react-agent/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/adeoluo/react-agent/releases"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/react-agent"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
-  <img alt="Type checked" src="https://img.shields.io/badge/mypy-strict-blue">
-  <img alt="Runtime dependencies" src="https://img.shields.io/badge/runtime%20deps-0-brightgreen">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
 ---
@@ -19,19 +17,18 @@
 
 Agent frameworks hide the one thing worth understanding: the control loop that turns a
 language model into something that *acts*. This project implements the ReAct pattern
-(interleaved **Rea**soning and **Act**ing) from scratch, with **zero runtime
-dependencies**, so the mechanism is fully visible - how a prompt is built, how the model's
-output is parsed into an action, how a tool is executed, and how the observation feeds the
-next step.
+(interleaved **Rea**soning and **Act**ing) from scratch, so the mechanism is fully visible:
+how a prompt is built, how the model's output is parsed into an action, how a tool is
+executed, and how the observation feeds the next step.
 
-Two properties make it production-grade rather than a toy: every run is a **fully auditable
-trace**, and the loop **recovers** from malformed output, unknown tools, and tool failures
-by turning each into feedback the model can act on, instead of crashing.
+Two properties make it suitable for real use: every run is a **fully auditable trace**, and
+the loop **recovers** from malformed output, unknown tools, and tool failures by turning each
+into feedback the model can act on, instead of crashing.
 
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture/architecture.svg" alt="System architecture" width="860">
+  <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
 The **Agent** builds a **prompt** from the question, the tool descriptions, and the running
@@ -41,18 +38,16 @@ appended; the loop repeats until a Final Answer or a step limit. Tools, the mode
 registry are all injected, so a deterministic scripted model and a frontier API are
 interchangeable. See the [architecture decision records](docs/adr/) for key choices.
 
-## Demonstration
+### Capabilities
 
-## Capabilities
-
-A complete, from-scratch agent toolkit, all offline and dependency-free:
+A complete, from-scratch agent toolkit that runs fully offline:
 
 - **10 built-in tools** across arithmetic, retrieval, dates, units, and text, plus a
-  structured knowledge base - all safe (the calculator uses an AST allow-list, never
+  structured knowledge base, all safe (the calculator uses an AST allow-list, never
   `eval`) and all raising recoverable `ToolError`s on bad input.
 - **Robust control loop** that recovers from malformed output, unknown tools, declared
   *and undeclared* tool exceptions (timeouts, bugs), non-string or oversized tool output,
-  and injection-style tool text, by turning each into an observation - and always
+  and injection-style tool text, by turning each into an observation, and always
   terminates within `max_steps`.
 - **Retry and recovery**: a tool can raise `RetryableToolError` to have the agent retry it
   (`tool_retries`) before the failure is surfaced as an observation to re-plan against.
@@ -66,7 +61,29 @@ A complete, from-scratch agent toolkit, all offline and dependency-free:
 - **Trace export**: lossless JSON serialization of a full run (`--json PATH`), the
   substrate for trace viewers and offline analysis.
 
-## Benchmark
+### Robustness
+
+The control loop is tested against each failure mode it is designed to survive, including
+hostile and buggy tools, and in every case it turns the failure into an observation and
+still terminates within `max_steps`:
+
+| Failure | How the loop recovers |
+|---|---|
+| Malformed model output | A `ParseError` becomes a formatting reminder observation |
+| Unknown tool requested | The observation lists the valid tool names |
+| A tool raises `ToolError` | The error message becomes the observation |
+| A tool raises an *undeclared* exception (bug, timeout) | Contained and turned into an observation; never propagated |
+| A tool returns non-string or oversized output | Coerced to a string and truncated to `max_observation_chars` |
+| Injection-style tool output (`Final Answer:` in the text) | Recorded as inert data; only the model's own completions can finish the run |
+| A transient tool failure (`RetryableToolError`) | Retried up to `tool_retries` times, then surfaced as an observation to re-plan |
+| No answer within budget / a looping model | The run stops at `max_steps` and reports `finished = False` |
+
+These are enforced by `tests/test_adversarial.py`, which drives each case with a scripted
+model so the guarantees are deterministic and offline.
+
+## Results
+
+### Benchmark
 
 The offline agent, driven by the deterministic rule-policy model over the full toolset,
 solves the built-in suite end to end (`python -m react_agent benchmark`):
@@ -86,7 +103,7 @@ Loop vs. single-shot baseline:
 
 The suite includes multi-step questions (for example "the capital of France, *and* 21 times
 2") that need more than one tool call. To show the loop is doing the work, the harness also
-runs a **single-shot baseline** - the same model and tools with a one-step budget (one model
+runs a **single-shot baseline**: the same model and tools with a one-step budget (one model
 turn, no observe-then-replan). It solves **0/8**, because every task needs a tool
 observation fed back into reasoning, while the full loop solves **8/8**: a **+100 percentage
 point** lift that is the ReAct loop itself.
@@ -108,7 +125,7 @@ model replaces it behind the same interface.
 | Full agent runs (plan, act, observe, answer) over the eight-task suite | ~20,000-27,000 runs / sec |
 | Calculator tool calls (AST evaluation) | ~150,000 calls / sec |
 
-The control loop and tools are pure-Python and offline, so the agent's own overhead is
+The control loop and tools run in-process and offline, so the agent's own overhead is
 negligible next to the model calls a production deployment would make. The suite now
 includes two-tool-call questions, so each run averages more than one step; the numbers are
 environment-specific and reproduced per machine.
@@ -131,11 +148,25 @@ benchmarks/scale.py`):
 The shape is the point: the ReAct loop is O(1) work per task, so throughput stays
 roughly flat as the batch grows while peak memory rises linearly with the retained
 per-task traces and answers; success stays at 100%. These numbers are from synthetic
-tasks on a pure-Python loop with an offline deterministic model -- they measure harness
+tasks on an in-process Python loop with an offline deterministic model: they measure harness
 overhead, **not** a frontier model's latency, and are **not** a comparison against a
 hosted agent framework.
 
-## Demonstration
+## Quickstart
+
+```bash
+git clone https://github.com/adeoluo/react-agent.git && cd react-agent
+make setup                    # install dev tooling + pre-commit hooks
+make all                      # lint + type-check + test
+
+python -m react_agent tools        # list the built-in tools
+python -m react_agent demonstrate  # run the offline scripted example
+python -m react_agent benchmark    # run the offline benchmark suite
+```
+
+## Usage
+
+### Demonstration
 
 Fully offline, via `python -m react_agent demonstrate`:
 
@@ -152,39 +183,9 @@ Observation: 42
 Final Answer: The capital of France is Paris, and 21 times 2 is 42.
 ```
 
-## Robustness
+### Using a frontier model
 
-The control loop is tested against each failure mode it is designed to survive - including
-hostile and buggy tools - and in every case it turns the failure into an observation and
-still terminates within `max_steps`:
-
-| Failure | How the loop recovers |
-|---|---|
-| Malformed model output | A `ParseError` becomes a formatting reminder observation |
-| Unknown tool requested | The observation lists the valid tool names |
-| A tool raises `ToolError` | The error message becomes the observation |
-| A tool raises an *undeclared* exception (bug, timeout) | Contained and turned into an observation; never propagated |
-| A tool returns non-string or oversized output | Coerced to a string and truncated to `max_observation_chars` |
-| Injection-style tool output (`Final Answer:` in the text) | Recorded as inert data; only the model's own completions can finish the run |
-| A transient tool failure (`RetryableToolError`) | Retried up to `tool_retries` times, then surfaced as an observation to re-plan |
-| No answer within budget / a looping model | The run stops at `max_steps` and reports `finished = False` |
-
-These are enforced by `tests/test_adversarial.py`, which drives each case with a scripted
-model so the guarantees are deterministic and offline.
-
-## Quickstart
-
-```bash
-git clone https://github.com/adeoluo/react-agent.git && cd react-agent
-make setup                    # install dev tooling + pre-commit hooks
-make all                      # lint + type-check + test
-
-python -m react_agent tools        # list the built-in tools
-python -m react_agent demonstrate  # run the offline scripted example
-python -m react_agent benchmark    # run the offline benchmark suite
-```
-
-Use a frontier model by installing its optional extra and setting an API key:
+Install the provider's optional extra and set an API key:
 
 ```bash
 uv sync --extra openai        # or: --extra anthropic
@@ -193,32 +194,21 @@ python -m react_agent run --verbose --json trace.json \
     "What is 17 * 23, and what is the capital of Japan?"
 ```
 
-## Built-in tools
+### Built-in tools
 
-- **calculator** - arithmetic through an AST operator allow-list; never uses `eval`.
-- **search** - fuzzy, offline lookup over a bundled knowledge base.
-- **knowledge_base** - structured attribute lookup (`capital of France`).
-- **memory** - a per-run key-value scratchpad (`set k = v` / `get k`).
-- **date_difference** / **weekday** - deterministic date reasoning.
-- **convert_units** - length, mass, and temperature conversion.
-- **text_length** / **text_transform** / **count_occurrences** - string utilities.
+- **calculator**: arithmetic through an AST operator allow-list; never uses `eval`.
+- **search**: fuzzy, offline lookup over a bundled knowledge base.
+- **knowledge_base**: structured attribute lookup (`capital of France`).
+- **memory**: a per-run key-value scratchpad (`set k = v` / `get k`).
+- **date_difference** / **weekday**: deterministic date reasoning.
+- **convert_units**: length, mass, and temperature conversion.
+- **text_length** / **text_transform** / **count_occurrences**: string utilities.
 
 `default_toolset()` provides the core three; `full_toolset()` provides all ten.
 
-## Design decisions
+### HTTP service
 
-- **Structural `Protocol` typing** for `Tool` and `LanguageModel`: any object with the
-  right shape is a first-class citizen, so stubs and APIs are interchangeable.
-  ([ADR-0002](docs/adr/0002-protocol-interfaces.md))
-- **Recover, do not crash.** Every failure becomes an observation, which both matches how
-  capable agents behave and keeps runs debuggable.
-  ([ADR-0003](docs/adr/0003-error-recovery-as-observation.md))
-- **Zero runtime dependencies.** The agent is pure Python; provider SDKs are optional and
-  lazily imported.
-
-## Running the service
-
-A dependency-free HTTP service runs the agent with the offline, deterministic rule-policy
+A standard-library HTTP service runs the agent with the offline, deterministic rule-policy
 model and the full toolset:
 
 ```bash
@@ -229,13 +219,54 @@ curl -s -X POST localhost:8000/run -d '{"question": "What is 2 * (3 + 4)?"}'
 ```
 
 `GET /health` lists the tools and model; `POST /run` returns the answer, whether the agent
-finished, and the full typed trace. A production-style stress benchmark
-(`uv run python benchmarks/stress.py`) reports throughput and p50/p95/p99 latency; with the
-offline model a single core serves tens of thousands of bounded runs per second. The step
-budget bounds every request, which with a provider model bounds the number of model calls
-and therefore spend. See the [operations guide](docs/OPERATIONS.md), the
-The service also exposes `GET /ready` (readiness) and `GET /metrics` (per-route request, error, and latency metrics in Prometheus text format).
-[scaling and tradeoffs](docs/SCALING.md) document, and the [case study](docs/CASE_STUDY.md).
+finished, and the full typed trace. The service also exposes `GET /ready` (readiness) and
+`GET /metrics` (per-route request, error, and latency metrics in Prometheus text format). A
+production-style stress benchmark (`uv run python benchmarks/stress.py`) reports throughput
+and p50/p95/p99 latency; with the offline model a single core serves tens of thousands of
+bounded runs per second. The step budget bounds every request, which with a provider model
+bounds the number of model calls and therefore spend. See the
+[operations guide](docs/OPERATIONS.md), the [scaling and tradeoffs](docs/SCALING.md)
+document, and the [case study](docs/CASE_STUDY.md).
+
+## Design decisions
+
+- **Structural `Protocol` typing** for `Tool` and `LanguageModel`: any object with the
+  right shape is a first-class citizen, so stubs and APIs are interchangeable.
+  ([ADR-0002](docs/adr/0002-protocol-interfaces.md))
+- **Recover, do not crash.** Every failure becomes an observation, which both matches how
+  capable agents behave and keeps runs debuggable.
+  ([ADR-0003](docs/adr/0003-error-recovery-as-observation.md))
+- **Optional provider SDKs.** The agent core runs offline on its own; provider SDKs are
+  optional and lazily imported.
+- **Recording decisions.** ([ADR-0001](docs/adr/0001-record-architecture-decisions.md))
+
+## Testing
+
+```bash
+make test                     # uv run pytest
+make coverage                 # pytest with an 80% coverage gate
+```
+
+The suite has 120 deterministic, offline tests in thirteen modules under `tests/`; model
+behavior is driven by a scripted model or the rule-policy model, so no network or API key is
+needed:
+
+- **Control loop** (`test_agent.py`, `test_parser.py`, `test_prompt.py`): the ReAct loop
+  including failure recovery, parsing of model output, and prompt construction.
+- **Adversarial tool use** (`test_adversarial.py`): every row of the robustness table above,
+  including undeclared exceptions, timeouts, non-string and oversized output, injection-style
+  text, and retryable failures.
+- **Tools** (`test_tool.py`, `test_tools.py`, `test_extended_tools.py`): the tool abstraction
+  and registry, the built-in tools, and the extended tool library.
+- **Benchmark** (`test_benchmark.py`): the harness, the suite, and the rule-policy model.
+- **Observability and budgets** (`test_callbacks.py`, `test_trace.py`): callbacks, the
+  prompt-size budget, trace export, and logging callbacks.
+- **Adapters and interfaces** (`test_llms.py`, `test_cli.py`, `test_service.py`): the scripted
+  model and provider adapters, the CLI, and the HTTP request handler.
+
+CI (`.github/workflows/ci.yml`) runs `ruff format --check`, `ruff check`, `mypy src`, and
+`pytest` with an 80% coverage gate on Python 3.11 and 3.12, then builds the package and the
+Docker image.
 
 ## Responsible AI
 
@@ -260,5 +291,4 @@ The service also exposes `GET /ready` (readiness) and `GET /metrics` (per-route 
 
 ## License
 
-[MIT](LICENSE). Part of an artificial intelligence engineering portfolio by
-[adeoluo](https://github.com/adeoluo).
+Released under the [MIT License](LICENSE).

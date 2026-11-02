@@ -1,4 +1,4 @@
-"""Tests for the dependency-free HTTP agent service (pure handler layer)."""
+"""Tests for the standard-library HTTP agent service (pure handler layer)."""
 
 from __future__ import annotations
 
