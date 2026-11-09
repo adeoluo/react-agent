@@ -24,7 +24,7 @@ from react_agent.core import (
 )
 from react_agent.llms import AnthropicModel, OpenAIModel, ScriptedModel
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "AgentAction",

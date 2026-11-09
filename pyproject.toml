@@ -1,6 +1,6 @@
 [project]
 name = "react-agent"
-version = "0.1.0"
+version = "0.1.1"
 description = "A ReAct reasoning-and-acting agent built from scratch: tool use, a transparent control loop, and full step tracing."
 readme = "README.md"
 requires-python = ">=3.12"
