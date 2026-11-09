@@ -11,6 +11,7 @@ from __future__ import annotations
 import importlib.util
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 
 def _require(package: str, extra: str) -> None:
@@ -25,8 +26,11 @@ def _require(package: str, extra: str) -> None:
 class OpenAIModel:
     """Chat-completion adapter for OpenAI models."""
 
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-6-luna"
     temperature: float = 0.0
+    # Current OpenAI models reason by default and then reject temperature; "none" turns
+    # reasoning off so temperature 0 applies.
+    reasoning_effort: Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] = "none"
 
     @property
     def name(self) -> str:
@@ -41,6 +45,7 @@ class OpenAIModel:
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=self.temperature,
+            reasoning_effort=self.reasoning_effort,
             stop=list(stop) if stop else None,
         )
         return response.choices[0].message.content or ""
@@ -50,9 +55,10 @@ class OpenAIModel:
 class AnthropicModel:
     """Messages-API adapter for Anthropic Claude models."""
 
-    model: str = "claude-3-5-sonnet-latest"
-    temperature: float = 0.0
-    max_tokens: int = 1024
+    model: str = "claude-sonnet-5-5"
+    # Includes adaptive thinking tokens on Claude 5 models. No temperature: the current
+    # Messages API and the Claude 5 models accept only the default sampling settings.
+    max_tokens: int = 2048
 
     @property
     def name(self) -> str:
@@ -63,10 +69,9 @@ class AnthropicModel:
         from anthropic import Anthropic
 
         client = Anthropic()
-        response = client.messages.create(  # type: ignore[call-overload]
+        response = client.messages.create(
             model=self.model,
             max_tokens=self.max_tokens,
-            temperature=self.temperature,
             stop_sequences=list(stop) if stop else [],
             messages=[{"role": "user", "content": prompt}],
         )
